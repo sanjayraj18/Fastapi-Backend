@@ -20,3 +20,15 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PostBase(BaseModel):
+    title : str = Field(default=None, min_length=5, max_length=40)
+    content : str = Field(default=None)
+    created_at : datetime
+
+class PostResponse(PostBase):
+    id : int
+
+    class Config:
+        from_attributes = True
+    
