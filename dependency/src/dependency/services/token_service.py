@@ -70,38 +70,28 @@ def save_refresh_token_to_db(user_id : str, refresh_token : str, db : Session) -
         db.add(db_refresh_token)
         db.commit()
 
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Unexpected error while saving to DB")
+        raise
 
 
 def validate_refresh_token_in_db(token : str, db :Session) -> str:
-    try:
-        user_id = verify_refresh_token(token)
+    user_id = verify_refresh_token(token)
 
-        db_token = db.query(RefreshToken).filter(
-            RefreshToken.token == token
-        ).first()
+    db_token = db.query(RefreshToken).filter(
+        RefreshToken.token == token
+    ).first()
 
-        if not db_token:
-             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token not found or revoked"
-            )
-
-        if datetime.now(timezone.utc) > db_token.expires_at:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token expired"
-            )
-
-        return user_id
-    
-    except HTTPException:
-        raise
-
-    except Exception:
+    if not db_token:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error validating refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found or revoked"
         )
+
+    if datetime.now(timezone.utc) > db_token.expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired"
+        )
+
+    return user_id

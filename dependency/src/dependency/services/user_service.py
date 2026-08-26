@@ -40,12 +40,9 @@ def signin(data : UserBase, db : Session) -> TokenResponse:
             refresh_token = refresh_token
         )
 
-    except HTTPException:
-        raise
-    
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An unexpected error")
+        raise
 
 
 def signup(data : UserBase, db : Session) -> TokenResponse:
@@ -78,10 +75,7 @@ def signup(data : UserBase, db : Session) -> TokenResponse:
              refresh_token=refresh_token
         )
     
-    except HTTPException:
-        raise
-    
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An unexpected error")
+        raise
 

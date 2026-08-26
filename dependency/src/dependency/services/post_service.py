@@ -17,12 +17,9 @@ def create_post(data: PostBase, db: Session, current_user: User) -> PostResponse
         db.refresh(new_post)
         return new_post
 
-    except HTTPException:
-        raise
-
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An unexpected error in creating posts")
+        raise
 
 
 def get_posts(db: Session, current_user: User) -> list[PostResponse]:
@@ -30,12 +27,9 @@ def get_posts(db: Session, current_user: User) -> list[PostResponse]:
         posts = db.query(Post).filter(Post.user_id == current_user.id).all()
         return posts
 
-    except HTTPException:
-        raise
-
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An unexpected error in fetching posts")
+        raise
 
 
 def update_post(post_id: str, data: PostBase, db: Session, current_user: User) -> PostResponse:
@@ -56,12 +50,9 @@ def update_post(post_id: str, data: PostBase, db: Session, current_user: User) -
 
         return post
 
-    except HTTPException:
-        raise
-
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred in updating post")
+        raise
 
 
 def delete_post(post_id: str, db: Session, current_user: User):
@@ -77,9 +68,6 @@ def delete_post(post_id: str, db: Session, current_user: User):
         db.delete(post)
         db.commit()
 
-    except HTTPException:
-        raise
-
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred in deleting post")
+        raise
