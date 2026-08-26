@@ -33,7 +33,7 @@ def upgrade() -> None:
     sa.UniqueConstraint('email')
     )
     op.create_table('posts',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), nullable=False),
     sa.Column('title', sa.String(length=100), nullable=False),
     sa.Column('content', sa.String(length=500), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -41,7 +41,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_posts_id'), 'posts', ['id'], unique=False)
     # ### end Alembic commands ###
 
 

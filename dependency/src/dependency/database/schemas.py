@@ -21,7 +21,7 @@ class Post(Base):
 
     __tablename__ = "posts"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     title = Column(String(100), nullable=False)
     content = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

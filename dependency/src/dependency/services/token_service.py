@@ -6,13 +6,12 @@ from sqlalchemy.orm import Session
 from database.schemas import RefreshToken
 
 
-def create_access_token(user_id : str) -> str:
-
-    expire = datetime.now(timezone.utc) + timedelta(minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+def create_access_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode = {
-        "user_id" : user_id,
-        "exp" :  int(expire.timestamp())
+        "user_id": str(user_id),
+        "exp": int(expire.timestamp())
     }
 
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
@@ -34,13 +33,12 @@ def verify_access_token(token : str) -> str:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
-def create_refresh_token(user_id : str) -> str:
-
+def create_refresh_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
     to_encode = {
-        "user_id" : user_id,
-        "exp" : int(expire.timestamp())
+        "user_id": str(user_id),
+        "exp": int(expire.timestamp())
     }
 
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)

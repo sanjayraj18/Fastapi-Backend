@@ -22,13 +22,15 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 class PostBase(BaseModel):
-    title : str = Field(default=None, min_length=5, max_length=40)
-    content : str = Field(default=None)
+    title : str = Field(min_length=5, max_length=40)
+    content : str = Field(min_length=1)
+
+
+class PostResponse(BaseModel):
+    id : UUID
+    title : str
+    content : str
     created_at : datetime
-
-
-class PostResponse(PostBase):
-    id : int
 
     class Config:
         from_attributes = True
