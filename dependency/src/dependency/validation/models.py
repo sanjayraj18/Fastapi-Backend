@@ -26,9 +26,22 @@ class PostBase(BaseModel):
     content : str = Field(default=None)
     created_at : datetime
 
+
 class PostResponse(PostBase):
     id : int
 
     class Config:
         from_attributes = True
+
+class TokenResponse(BaseModel):
+    access_token : str
+    refresh_token : str
+    token_type: str = "bearer"
+
+class TokenData(BaseModel):
+    user_id : UUID
+    exp : int 
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
     
