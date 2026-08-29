@@ -22,7 +22,6 @@ async def endpoint(ws: WebSocket, room_id: str, user_id: str):
 
     try:
         conn.start()
-        # Owns the socket from here on. The endpoint must not touch `ws` again.
         await conn.wait()
     finally:
         conn.kill()
