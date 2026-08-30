@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket
 import secrets
+from roomregistry import RoomRegistry as registry
 
 from connection import Connection, get_room
 
@@ -16,17 +17,12 @@ async def endpoint(ws: WebSocket, room_id: str, user_id: str):
         room_id=room_id,
         user_id=user_id,
     )
-    room = get_room(room_id)
-    room.add(conn)
-    print(f"[{room_id}] + {conn.id} {user_id} ({len(room)} in room)", flush=True)
+
+    registry.join(room_id, conn)
+    conn.start() 
 
     try:
-        conn.start()
-        await conn.wait()
+        if conn._reader_task:
+            await conn._reader_task    
     finally:
-        conn.kill()
-        print(
-            f"[{room_id}] - {conn.id} {user_id} "
-            f"sent={conn.sent} dropped={conn.dropped}",
-            flush=True,
-        )
+        registry.leave(room_id, user_id) 

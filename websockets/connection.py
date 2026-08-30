@@ -3,9 +3,6 @@ import asyncio
 import contextlib
 
 
-rooms: dict[str, "Room"] = {}
-
-
 class Connection:
     def __init__(self, id: str, ws: WebSocket, room_id: str, user_id: str):
         self.id = id
@@ -13,6 +10,8 @@ class Connection:
         self.room_id = room_id
         self.ws = ws
         self.out = asyncio.Queue(maxsize=256)
+
+        self.room = None              # set by registry.join() — the reader uses this
 
         self.sent = 0
         self.dropped = 0
@@ -42,13 +41,10 @@ class Connection:
         try:
             while True:
                 msg = await self.ws.receive_text()
-                room = rooms.get(self.room_id)
-                if room:
-                    # Chat: droppable per the policy table. A client that falls
-                    # behind loses messages and can see it in conn.dropped,
-                    # rather than being disconnected. A document op would pass
-                    # droppable=False and take the 4008 instead.
-                    room.broadcast(f"{self.user_id}: {msg}", droppable=True)
+                if self.room is not None:
+                    # Route the edit into the room's inbox -> single consumer
+                    # assigns seq, applies to state, and fans out.
+                    self.room.enqueue(f"{self.user_id}: {msg}")
         except WebSocketDisconnect:
             pass
         except asyncio.CancelledError:
@@ -93,17 +89,16 @@ class Connection:
             return False
 
     def kill(self, code: int = 1000, reason: str = ""):
+        """Shut down THIS connection only: cancel its tasks, close its socket.
+
+        Room membership and teardown are the registry's job (registry.leave),
+        so kill() no longer touches rooms -- otherwise instant removal here
+        would defeat the registry's 30s grace period.
+        """
         if self._closing:
             return
         self._closing = True
         self.close_code, self.close_reason = code, reason
-
-        room = rooms.get(self.room_id)
-        if room:
-            # keyed by connection id, not user id -- one user can hold several
-            room.remove(self.id)
-            if len(room) == 0:
-                rooms.pop(self.room_id, None)
 
         # Never cancel the task we are currently running on. kill() is normally
         # called from _reader_loop's finally, and cancelling yourself there
@@ -128,38 +123,3 @@ class Connection:
             f"<Conn {self.id} {self.user_id} q={self.out.qsize()}"
             f" sent={self.sent} dropped={self.dropped}>"
         )
-
-
-class Room:
-    def __init__(self, id: str):
-        self.id = id
-        self._conns: dict[str, Connection] = {}
-
-    def add(self, conn: Connection):
-        self._conns[conn.id] = conn
-
-    def remove(self, conn_id: str):
-        self._conns.pop(conn_id, None)
-
-    def broadcast(self, msg: str, *, droppable: bool = False) -> tuple[int, int]:
-        """NOT a coroutine. N put_nowait calls: microseconds, cannot block.
-
-        list() is required: enqueue -> kill -> room.remove mutates _conns, and
-        mutating a dict mid-iteration raises RuntimeError.
-        """
-        delivered = dropped = 0
-        for conn in list(self._conns.values()):
-            if conn.enqueue(msg, droppable=droppable):
-                delivered += 1
-            else:
-                dropped += 1
-        return delivered, dropped
-
-    def __len__(self) -> int:
-        return len(self._conns)
-
-
-def get_room(room_id: str) -> Room:
-    if room_id not in rooms:
-        rooms[room_id] = Room(room_id)
-    return rooms[room_id]
