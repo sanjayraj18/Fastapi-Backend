@@ -35,6 +35,8 @@ class RoomRegistry:
                 self._snapshot(room.state)
                 if room.consumer:
                     room.consumer.cancel()
+                if room.sweeper:
+                    room.sweeper.cancel()
                 del self.rooms[room_id]
 
         asyncio.create_task(_teardown())

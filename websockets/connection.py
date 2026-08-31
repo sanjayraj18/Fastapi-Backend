@@ -1,6 +1,7 @@
 from fastapi import WebSocket, WebSocketDisconnect
 import asyncio
 import contextlib
+import json
 
 
 class Connection:
@@ -40,11 +41,20 @@ class Connection:
         """The ONLY task that calls ws.receive()."""
         try:
             while True:
-                msg = await self.ws.receive_text()
-                if self.room is not None:
-                    # Route the edit into the room's inbox -> single consumer
-                    # assigns seq, applies to state, and fans out.
-                    self.room.enqueue(f"{self.user_id}: {msg}")
+                raw = await self.ws.receive_text()
+                msg = json.loads(raw)
+                
+                #presence logic
+                if msg["type"] == "edit":
+                    if self.room:
+                        self.room.enqueue(msg["data"])
+
+                elif msg["type"] == "cursor":
+                    if self.room:
+                        self.room.update_presence(
+                            self.user_id, msg["x"], msg["y"]
+                        )
+
         except WebSocketDisconnect:
             pass
         except asyncio.CancelledError:
